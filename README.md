@@ -47,6 +47,7 @@ brew install docker-machine-nfs
 * VMware Vsphere
 * Xhyve
 * Hyperkit
+* Generic (debian based)
 
 ## Usage
 
