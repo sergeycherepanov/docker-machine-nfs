@@ -310,7 +310,7 @@ lookupMandatoryProperties ()
     return
   fi
 
-  if [[ "$prop_machine_driver" =~ (xhyve|hyperkit|vmwarevsphere) ]]; then
+  if [[ "$prop_machine_driver" =~ (generic|xhyve|hyperkit|vmwarevsphere) ]]; then
     prop_network_id="Shared"
     prop_nfshost_ip=${prop_use_ip:-"$(ifconfig -m `route get $prop_machine_ip | awk '{if ($1 ~ /interface:/){print $2}}'` | awk 'sub(/inet /,""){print $1}')"}
     if [ "" = "${prop_nfshost_ip}" ]; then
@@ -437,6 +437,18 @@ configureBoot2Docker()
   if isPropertyNotSet $prop_nfshost_ip; then
     echoError "'prop_nfshost_ip' not set!"; exit 1;
   fi
+  
+  # Install dependencies for generic driver
+  if [ "$prop_machine_driver" = "generic" ]; then
+  docker-machine ssh $prop_machine_name \
+    "which nfs-client || { sudo apt update -qqy && sudo apt install -qqy nfs-common }" < /dev/null > /dev/null
+  
+  docker-machine ssh $prop_machine_name \
+    "which crudini || { sudo apt update -qqy && sudo apt install -qqy crudini }" < /dev/null > /dev/null
+
+  docker-machine ssh $prop_machine_name \
+    "sudo crudini --set /etc/systemd/system/docker.service Service ExecStartPre /var/lib/boot2docker/bootlocal.sh" < /dev/null > /dev/null
+  fi
 
   # render bootlocal.sh and copy bootlocal.sh over to Docker Machine
   # (this will override an existing /var/lib/boot2docker/bootlocal.sh)
@@ -469,7 +481,7 @@ configureBoot2Docker()
   local file="/var/lib/boot2docker/bootlocal.sh"
 
   docker-machine ssh $prop_machine_name \
-    "echo '$bootlocalsh' | sudo tee $file && sudo chmod +x $file && sync" < /dev/null > /dev/null
+    "sudo mkdir -p /var/lib/boot2docker && echo '$bootlocalsh' | sudo tee $file && sudo chmod +x $file && sync" < /dev/null > /dev/null
   
   sleep 2
 
@@ -485,7 +497,9 @@ restartDockerMachine()
     echoError "'prop_machine_name' not set!"; exit 1;
   fi
 
-  docker-machine restart $prop_machine_name > /dev/null
+  docker-machine restart $prop_machine_name > /dev/null || {
+      echoSuccess "OK" # Ignore error: Connection to x.x.x.x closed by remote host. 
+  }
 
   echoSuccess "OK"
 }
