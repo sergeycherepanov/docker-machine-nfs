@@ -441,10 +441,10 @@ configureBoot2Docker()
   # Install dependencies for generic driver
   if [ "$prop_machine_driver" = "generic" ]; then
   docker-machine ssh $prop_machine_name \
-    "which nfs-client || { sudo apt update -qqy && sudo apt install -qqy nfs-common }" < /dev/null > /dev/null
+    "which nfs-client || { sudo apt update -qqy && sudo apt install -qqy nfs-common; }" < /dev/null > /dev/null
   
   docker-machine ssh $prop_machine_name \
-    "which crudini || { sudo apt update -qqy && sudo apt install -qqy crudini }" < /dev/null > /dev/null
+    "which crudini || { sudo apt update -qqy && sudo apt install -qqy crudini; }" < /dev/null > /dev/null
 
   docker-machine ssh $prop_machine_name \
     "sudo crudini --set /etc/systemd/system/docker.service Service ExecStartPre /var/lib/boot2docker/bootlocal.sh" < /dev/null > /dev/null
